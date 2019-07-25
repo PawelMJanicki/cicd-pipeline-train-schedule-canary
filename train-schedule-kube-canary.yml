@@ -1,0 +1,53 @@
+#NodePort service - Open kube port for an application of service kind; in production NLB option will be advised, not exposing port directly
+#This is verion that covers canary version of application
+#Main service created in major yml file will cover both version of application by redireting some traffic to the canary deployment
+#as it is watching for only app level. Here we have additionally create service for canary instance only level
+kind: Service
+apiVersion: v1
+metadata:
+  name: train-schedule-service-canary
+spec:
+  type: NodePort
+  selector:
+    app: train-schedule
+    track: canary #Config file now is not only wating for an application but also for track
+  ports: #Porst is exposed on the nodes only, not on the master, therefore application will be accessible from nodes IPs!
+  - protocol: TCP
+    port: 8080
+    nodePort: 8081 #For Canary version 8081 will be used on node site
+
+---
+#Desired state of deployment. There can be many documents in one yml file. They need to be divided by ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: train-schedule-deployment-canary
+  labels:
+    app: train-schedule
+spec:
+  replicas: $CANARY_REPLICAS #Jenkis pipele can overwrite number of replicas
+  selector:
+    matchLabels:
+      app: train-schedule
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: train-schedule
+        track: canary
+    spec:
+      containers:
+      - name: train-schedule
+        image: $DOCKER_IMAGE_NAME:$BUILD_NUMBER #Jenkins Kubernetes plugin allows to replace variables
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 200m
