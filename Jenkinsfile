@@ -1,8 +1,7 @@
 pipeline {
     agent any
     environment {
-        //be sure to replace "willbla" with your own Docker Hub username
-        DOCKER_IMAGE_NAME = "willbla/train-schedule"
+        DOCKER_IMAGE_NAME = "pawelmjanicki/train-schedule"
     }
     stages {
         stage('Build') {
@@ -46,9 +45,9 @@ pipeline {
                 input 'Deploy to Production?'
                 milestone(1)
                 kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube.yml',
-                    enableConfigSubstitution: true
+                  kubeconfigId: 'kubeconfig', //value stored as a kubernetes config credential on the Jenkins (names must much)
+                  configs: 'train-schedule-kube.yml', //Kubernetes deploy document containing application setup
+                  enableConfigSubstitution: true //Jenkins plugin will make substitutions for $ signed variables
                 )
             }
         }
