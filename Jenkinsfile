@@ -37,13 +37,36 @@ pipeline {
                 }
             }
         }
+        stage('CanaryDeploy') {
+          when {
+            branch 'master'
+          }
+          environment {
+            CANARY_REPLICAS = 2
+          }
+          steps{
+            kubernetesDeploy(
+              kubeconfigId: 'kubeconfig', //value stored as a kubernetes config credential on the Jenkins (names must much)
+              configs: 'train-schedule-kube-canary.yml', //Kubernetes deploy document containing application setup
+              enableConfigSubstitution: true //Jenkins plugin will make substitutions for $ signed variables
+            )
+          }
+        }
         stage('DeployToProduction') {
             when {
                 branch 'master'
             }
+            environment {
+              CANARY_REPLICAS = 0 //Cleaning Canary pods that are no longer needed
+            }
             steps {
                 input 'Deploy to Production?'
                 milestone(1)
+                kubernetesDeploy(
+                  kubeconfigId: 'kubeconfig', //value stored as a kubernetes config credential on the Jenkins (names must much)
+                  configs: 'train-schedule-kube-canary.yml', //Kubernetes deploy document containing application setup
+                  enableConfigSubstitution: true //Jenkins plugin will make substitutions for $ signed variables
+                )
                 kubernetesDeploy(
                   kubeconfigId: 'kubeconfig', //value stored as a kubernetes config credential on the Jenkins (names must much)
                   configs: 'train-schedule-kube.yml', //Kubernetes deploy document containing application setup
