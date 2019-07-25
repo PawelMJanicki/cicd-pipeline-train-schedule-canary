@@ -13,7 +13,7 @@ spec:
     track: canary #Config file now is not only wating for an application but also for track
   ports: #Porst is exposed on the nodes only, not on the master, therefore application will be accessible from nodes IPs!
   - protocol: TCP
-    port: 8080
+    port: 8081
     nodePort: 8081 #For Canary version 8081 will be used on node site
 
 ---
